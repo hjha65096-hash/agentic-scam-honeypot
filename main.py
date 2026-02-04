@@ -5,7 +5,7 @@ import re
 app = FastAPI(title="Agentic Scam Honeypot API")
 
 # -----------------------------
-# Data Model (IMPORTANT)
+# Request Model
 # -----------------------------
 class MessageRequest(BaseModel):
     message: str
@@ -19,13 +19,13 @@ SCAM_KEYWORDS = [
 ]
 
 # -----------------------------
-# Root Endpoint
+# Root Health Check (FIXES /)
 # -----------------------------
 @app.get("/")
 def root():
     return {
-        "message": "Agentic Scam Honeypot API is running",
-        "status": "OK"
+        "service": "Agentic Scam Honeypot API",
+        "status": "running"
     }
 
 # -----------------------------
@@ -38,17 +38,16 @@ def analyze_message(payload: MessageRequest):
     if not message:
         raise HTTPException(status_code=400, detail="Message cannot be empty")
 
-    # Step 1: Scam Detection (Rule-based)
+    # Scam detection
     keyword_hits = sum(1 for word in SCAM_KEYWORDS if word in message)
-    confidence_score = min(keyword_hits / 5, 1.0)  # cap at 1.0
+    confidence_score = min(keyword_hits / 5, 1.0)
     is_scam = confidence_score >= 0.3
 
-    # Step 2: Intelligence Extraction
+    # Extraction
     links = re.findall(r"https?://\S+", message)
     upi_ids = re.findall(r"\b[\w.-]+@(upi|paytm|phonepe|ybl)\b", message)
     bank_accounts = re.findall(r"\b\d{9,18}\b", message)
 
-    # Step 3: Response
     return {
         "is_scam": is_scam,
         "confidence_score": round(confidence_score, 2),
