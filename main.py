@@ -1,5 +1,4 @@
-from fastapi import FastAPI, HTTPException, Request
-from pydantic import BaseModel
+from fastapi import FastAPI, Request
 import re
 
 app = FastAPI(title="Agentic Scam Honeypot API")
@@ -9,6 +8,9 @@ SCAM_KEYWORDS = [
     "otp", "kyc", "lottery", "refund", "prize"
 ]
 
+# -----------------------------
+# Root health check
+# -----------------------------
 @app.get("/")
 def root():
     return {
@@ -16,17 +18,26 @@ def root():
         "status": "running"
     }
 
-@app.post("/analyze")
+# -----------------------------
+# Analyzer (GET + POST, safe)
+# -----------------------------
+@app.api_route("/analyze", methods=["GET", "POST"])
 async def analyze_message(request: Request):
+    message = ""
+
+    # Safely try to read JSON ONLY if it exists
     try:
-        body = await request.json()
-        message = body.get("message", "")
+        content_type = request.headers.get("content-type", "")
+        if content_type.startswith("application/json"):
+            body = await request.json()
+            if isinstance(body, dict):
+                message = body.get("message", "")
     except:
-        message = ""
+        pass
 
-    message = message.strip().lower()
+    message = str(message).strip().lower()
 
-    # If no message provided, still respond (tester case)
+    # Default message for tester
     if not message:
         message = "test message"
 
